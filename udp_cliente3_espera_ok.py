@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """Cliente UDP numerado que espera confirmación OK con timeout."""
 
 import socket
 import sys
 
+import salida_utf8
+
 
 def main() -> None:
+    salida_utf8.configurar()
     host = sys.argv[1] if len(sys.argv) > 1 else "localhost"
     puerto = int(sys.argv[2]) if len(sys.argv) > 2 else 9999
 
