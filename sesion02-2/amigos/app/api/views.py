@@ -5,25 +5,18 @@ from ..models import Amigo
 
 @api.route("/amigo/<int:id>", methods=["GET"])
 def get_amigo(id):
-    """
-    Retorna JSON con información sobre el amigo cuyo id recibe como parámetro
-    o un error 404 si no lo encuentra.
-    """
     amigo = Amigo.query.get_or_404(id)
     amigodict = {
         'id': amigo.id,
         'name': amigo.name,
         'lati': amigo.lati,
-        'longi': amigo.longi
+        'longi': amigo.longi,
+        'device': amigo.device
     }
     return jsonify(amigodict)
 
 @api.route("/amigo/byName/<name>", methods=["GET"])
 def get_amigo_by_name(name):
-    """
-    Busca el amigo por su nombre en la base de datos. Si no lo encuentra
-    retorna un error 404. Si lo encuentra retorna el JSON con sus datos.
-    """
     amigo = Amigo.query.filter_by(name=name).first()
     if not amigo:
         abort(404, "No se encuentra ningún amigo con ese nombre")
@@ -31,34 +24,37 @@ def get_amigo_by_name(name):
         'id': amigo.id,
         'name': amigo.name,
         'lati': amigo.lati,
-        'longi': amigo.longi
+        'longi': amigo.longi,
+        'device': amigo.device
     }
     return jsonify(amigodict)
 
 @api.route("/amigos", methods=["GET"])
 def list_amigos():
-    """
-    Retorna un JSON con la lista de amigos. Cada amigo es un diccionario
-    con los campos 'id', 'name', 'lati' y 'longi'
-    """
     amigos = Amigo.query.all()
     amigos_list = [
         {
             'id': a.id,
             'name': a.name,
             'lati': a.lati,
-            'longi': a.longi
+            'longi': a.longi,
+            'device': a.device
         }
         for a in amigos
     ]
     return jsonify(amigos_list)
 
+@api.route("/devices", methods=["GET"])
+def list_devices():
+    """
+    Suministra la lista de todos los device no nulos ni cadenas vacías.
+    """
+    amigos = Amigo.query.filter(Amigo.device.isnot(None), Amigo.device != "").all()
+    devices = [a.device for a in amigos]
+    return jsonify(devices)
+
 @api.route("/amigo/<int:id>", methods=["PUT"])
 def edit_amigo(id):
-    """
-    Modifica en la base de datos el amigo cuyo id recibe como parámetro.
-    Retorna el JSON con el amigo tras la modificación
-    """
     amigo = Amigo.query.get_or_404(id)
     if not request.json:
         abort(422, "No se ha enviado JSON")
@@ -72,23 +68,23 @@ def edit_amigo(id):
         amigo.lati = lati
     if longi:
         amigo.longi = longi
+    if "device" in request.json:
+        amigo.device = request.json.get("device")
 
-    if name or lati or longi:
+    if name or lati or longi or ("device" in request.json):
         db.session.commit()
 
     amigodict = {
         "id": amigo.id,
         "name": amigo.name,
         "longi": amigo.longi,
-        "lati": amigo.lati
+        "lati": amigo.lati,
+        "device": amigo.device
     }
     return jsonify(amigodict)
 
 @api.route("/amigo/<int:id>", methods=["DELETE"])
 def delete_amigo(id):
-    """
-    Elimina un amigo cuyo id recibe como parámetro de la base de datos.
-    """
     amigo = Amigo.query.get_or_404(id)
     db.session.delete(amigo)
     db.session.commit()
@@ -96,10 +92,6 @@ def delete_amigo(id):
 
 @api.route("/amigos", methods=["POST"])
 def new_amigo():
-    """
-    Modifica en la base de datos añadiendo un amigo cuyos datos
-    recibe en JSON. Retorna el JSON con el amigo tras la creación.
-    """
     if not request.json:
         abort(422, "No se ha enviado JSON")
     name = request.json.get("name")
@@ -111,8 +103,9 @@ def new_amigo():
 
     lati = request.json.get("lati", "0")
     longi = request.json.get("longi", "0")
+    device = request.json.get("device", "")
 
-    amigo = Amigo(name=name, lati=lati, longi=longi)
+    amigo = Amigo(name=name, lati=lati, longi=longi, device=device)
     db.session.add(amigo)
     db.session.commit()
 
@@ -120,6 +113,7 @@ def new_amigo():
         "id": amigo.id,
         "name": amigo.name,
         "longi": amigo.longi,
-        "lati": amigo.lati
+        "lati": amigo.lati,
+        "device": amigo.device
     }
     return jsonify(amigodict)
